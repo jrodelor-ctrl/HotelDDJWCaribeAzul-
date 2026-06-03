@@ -472,12 +472,14 @@ Para el despliegue del sistema se utiliza la siguiente distribución:
 ## URLs del proyecto
 
 ```txt
+
 Repositorio GitHub: https://github.com/jrodelor-ctrl/HotelDDJWCaribeAzul-
+Frontend desplegado: https://hotel-ddjw-caribe-azul.vercel.app
 Backend desplegado: https://inventario-ddjw-backend.onrender.com
 API desplegada: https://inventario-ddjw-backend.onrender.com/api
 Health Check: https://inventario-ddjw-backend.onrender.com/api/health
-Frontend desplegado: Pendiente
 Base de datos: MongoDB Atlas
+
 ```
 
 ---
@@ -492,14 +494,6 @@ MONGODB_URI=CADENA_DE_CONEXION_DE_MONGODB_ATLAS
 JWT_SECRET=SECRETO_JWT_PRODUCCION
 CLIENT_URL=URL_DEL_FRONTEND_EN_VERCEL
 ```
-
-Mientras el frontend no esté desplegado, `CLIENT_URL` puede mantenerse temporalmente como:
-
-```env
-CLIENT_URL=http://localhost:3000
-```
-
-Después de desplegar el frontend en Vercel, debe actualizarse por la URL real del frontend.
 
 ### Frontend en Vercel
 
