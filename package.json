@@ -1,0 +1,20 @@
+{
+  "name": "hotel-ddjw-caribe-azul",
+  "version": "1.0.0",
+  "description": "Sistema web full-stack para la gestión de inventarios del Hotel DDJW Caribe Azul S.A.S.",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev"
+  },
+  "keywords": [
+    "hotel",
+    "inventario",
+    "mongodb",
+    "express",
+    "nextjs",
+    "react"
+  ],
+  "author": "Equipo Hotel Tech Web",
+  "license": "MIT"
+}
