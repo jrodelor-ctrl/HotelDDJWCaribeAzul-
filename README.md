@@ -51,8 +51,8 @@ Este sistema fue desarrollado como proyecto final académico de desarrollo web/f
 * GitHub
 * Postman
 * Visual Studio Code
-* Vercel, sugerido para frontend
-* Render, sugerido para backend
+* Render para backend
+* Vercel sugerido para frontend
 
 ---
 
@@ -67,6 +67,7 @@ hotel-ddjw-caribe-azul/
 │   │   ├── middlewares/
 │   │   ├── models/
 │   │   ├── routes/
+│   │   ├── utils/
 │   │   └── server.js
 │   ├── package.json
 │   └── .env
@@ -219,13 +220,13 @@ Antes de ejecutar el proyecto, se debe tener instalado:
 Clonar el repositorio:
 
 ```bash
-git clone URL_DEL_REPOSITORIO
+git clone https://github.com/jrodelor-ctrl/HotelDDJWCaribeAzul-.git
 ```
 
 Entrar a la carpeta del proyecto:
 
 ```bash
-cd hotel-ddjw-caribe-azul
+cd HotelDDJWCaribeAzul-
 ```
 
 ---
@@ -265,13 +266,13 @@ URL local del backend:
 http://localhost:4000
 ```
 
-URL base de la API:
+URL base local de la API:
 
 ```txt
 http://localhost:4000/api
 ```
 
-Ruta de verificación:
+Ruta de verificación local:
 
 ```txt
 http://localhost:4000/api/health
@@ -456,9 +457,9 @@ npm run build
 
 ---
 
-## Despliegue sugerido
+## Despliegue
 
-Para el despliegue del sistema se recomienda:
+Para el despliegue del sistema se utiliza la siguiente distribución:
 
 | Componente    | Plataforma    |
 | ------------- | ------------- |
@@ -466,16 +467,16 @@ Para el despliegue del sistema se recomienda:
 | Backend       | Render        |
 | Base de datos | MongoDB Atlas |
 
-Las URL definitivas del sistema se agregarán después del proceso de despliegue.
-
 ---
 
 ## URLs del proyecto
 
 ```txt
 Repositorio GitHub: https://github.com/jrodelor-ctrl/HotelDDJWCaribeAzul-
+Backend desplegado: https://inventario-ddjw-backend.onrender.com
+API desplegada: https://inventario-ddjw-backend.onrender.com/api
+Health Check: https://inventario-ddjw-backend.onrender.com/api/health
 Frontend desplegado: Pendiente
-Backend desplegado: Pendiente
 Base de datos: MongoDB Atlas
 ```
 
@@ -492,26 +493,35 @@ JWT_SECRET=SECRETO_JWT_PRODUCCION
 CLIENT_URL=URL_DEL_FRONTEND_EN_VERCEL
 ```
 
+Mientras el frontend no esté desplegado, `CLIENT_URL` puede mantenerse temporalmente como:
+
+```env
+CLIENT_URL=http://localhost:3000
+```
+
+Después de desplegar el frontend en Vercel, debe actualizarse por la URL real del frontend.
+
 ### Frontend en Vercel
 
 ```env
-NEXT_PUBLIC_API_URL=URL_DEL_BACKEND_EN_RENDER/api
+NEXT_PUBLIC_API_URL=https://inventario-ddjw-backend.onrender.com/api
 ```
 
 ---
 
 ## Consideraciones para despliegue
 
-Antes de desplegar:
+Antes y después de desplegar se debe verificar:
 
-1. Verificar que el backend funcione localmente.
-2. Verificar que el frontend funcione localmente.
-3. Ejecutar `npm run build` en el frontend.
-4. Revisar que los archivos `.env` y `.env.local` no estén subidos al repositorio.
-5. Confirmar que MongoDB Atlas permita conexiones desde el servicio desplegado.
-6. Configurar correctamente CORS con la URL del frontend.
-7. Actualizar la variable `NEXT_PUBLIC_API_URL` en Vercel.
-8. Probar login y rutas protegidas en producción.
+1. Que el backend funcione localmente.
+2. Que el frontend funcione localmente.
+3. Que el frontend compile correctamente con `npm run build`.
+4. Que los archivos `.env` y `.env.local` no estén subidos al repositorio.
+5. Que MongoDB Atlas permita conexiones desde los servicios desplegados.
+6. Que CORS esté configurado con la URL del frontend.
+7. Que `NEXT_PUBLIC_API_URL` apunte al backend desplegado.
+8. Que el login y las rutas protegidas funcionen en producción.
+9. Que la ruta `/api/health` responda correctamente en Render.
 
 ---
 
@@ -559,16 +569,16 @@ La colección debe incluir:
 * Solicitudes.
 * Analítica.
 
-Se recomienda usar una variable de entorno en Postman:
+Se recomienda usar una variable de entorno en Postman para pruebas locales:
 
 ```txt
 base_url=http://localhost:4000/api
 ```
 
-Para producción:
+Para pruebas en producción:
 
 ```txt
-base_url=URL_DEL_BACKEND_DESPLEGADO/api
+base_url=https://inventario-ddjw-backend.onrender.com/api
 ```
 
 ---
@@ -591,6 +601,7 @@ Para el informe final se recomienda incluir capturas de:
 * Ayuda.
 * Pruebas en Postman.
 * MongoDB Atlas.
+* Backend desplegado en Render.
 * Sistema desplegado.
 * Repositorio en GitHub.
 
@@ -603,13 +614,14 @@ El sistema se encuentra en etapa final de cierre, pruebas, publicación en GitHu
 Estado general:
 
 * Backend funcional.
-* Frontend funcional.
+* Backend desplegado en Render.
+* Frontend funcional en entorno local.
 * Base de datos conectada en MongoDB Atlas.
 * Autenticación JWT implementada.
 * Módulos principales desarrollados.
 * Seguridad preventiva aplicada.
 * Exportación de reportes implementada.
-* Pendiente o en proceso: pruebas finales, documentación Postman, despliegue y evidencias del informe.
+* Pendiente o en proceso: despliegue del frontend en Vercel, documentación Postman, pruebas finales y evidencias del informe.
 
 ---
 
