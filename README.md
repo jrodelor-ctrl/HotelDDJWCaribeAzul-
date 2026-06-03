@@ -67,7 +67,7 @@ hotel-ddjw-caribe-azul/
 │   │   ├── middlewares/
 │   │   ├── models/
 │   │   ├── routes/
-│   │   └── app.js
+│   │   └── server.js
 │   ├── package.json
 │   └── .env
 │
@@ -473,7 +473,7 @@ Las URL definitivas del sistema se agregarán después del proceso de despliegue
 ## URLs del proyecto
 
 ```txt
-Repositorio GitHub: Pendiente
+Repositorio GitHub: https://github.com/jrodelor-ctrl/HotelDDJWCaribeAzul-
 Frontend desplegado: Pendiente
 Backend desplegado: Pendiente
 Base de datos: MongoDB Atlas
@@ -517,9 +517,9 @@ Antes de desplegar:
 
 ## Repositorio GitHub
 
-El repositorio del proyecto será publicado en GitHub como parte del proceso de entrega y despliegue.
+El proyecto se encuentra publicado en GitHub como parte del proceso de entrega y despliegue.
 
-Antes de subir el repositorio se debe verificar:
+Antes de cada actualización del repositorio se debe verificar:
 
 * Que no se incluyan archivos `.env`.
 * Que no se suban carpetas `node_modules`.
@@ -528,20 +528,13 @@ Antes de subir el repositorio se debe verificar:
 * Que el proyecto compile correctamente.
 * Que el README esté actualizado.
 
-Comandos sugeridos para el primer commit:
+Comandos sugeridos para guardar cambios:
 
 ```bash
 git status
 git add .
-git commit -m "Version final inicial del sistema de inventario DDJW"
-```
-
-Después de crear el repositorio en GitHub:
-
-```bash
-git remote add origin URL_DEL_REPOSITORIO
-git branch -M main
-git push -u origin main
+git commit -m "Descripcion del cambio realizado"
+git push
 ```
 
 ---
@@ -616,7 +609,7 @@ Estado general:
 * Módulos principales desarrollados.
 * Seguridad preventiva aplicada.
 * Exportación de reportes implementada.
-* Pendiente o en proceso: pruebas finales, documentación Postman, publicación en GitHub, despliegue y evidencias del informe.
+* Pendiente o en proceso: pruebas finales, documentación Postman, despliegue y evidencias del informe.
 
 ---
 
@@ -634,7 +627,8 @@ Integrantes:
 ---
 
 ## Institución
-IV semestro Ingenieria de Software
+
+IV semestre Ingeniería de Software
 Centro Tutorial El Carmen
 Universidad de Cartagena
 
