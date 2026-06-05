@@ -7,7 +7,8 @@ const usuarioSchema = new mongoose.Schema(
       type: String,
       required: [true, 'El nombre del usuario es obligatorio'],
       trim: true,
-      minlength: [3, 'El nombre debe tener al menos 3 caracteres']
+      minlength: [3, 'El nombre debe tener al menos 3 caracteres'],
+      maxlength: [80, 'El nombre no puede superar los 80 caracteres']
     },
 
     correo: {
@@ -33,6 +34,45 @@ const usuarioSchema = new mongoose.Schema(
       type: String,
       enum: ['admin', 'gerente', 'inventario'],
       default: 'inventario'
+    },
+
+    cargo: {
+      type: String,
+      trim: true,
+      maxlength: [80, 'El cargo no puede superar los 80 caracteres'],
+      default: ''
+    },
+
+    telefono: {
+      type: String,
+      trim: true,
+      maxlength: [30, 'El teléfono no puede superar los 30 caracteres'],
+      default: ''
+    },
+
+    area: {
+      type: String,
+      trim: true,
+      maxlength: [80, 'El área no puede superar los 80 caracteres'],
+      default: ''
+    },
+
+    fotoPerfil: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+
+    proveedorAuth: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local'
+    },
+
+    googleId: {
+      type: String,
+      trim: true,
+      default: ''
     },
 
     activo: {

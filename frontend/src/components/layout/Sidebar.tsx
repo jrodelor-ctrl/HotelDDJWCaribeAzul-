@@ -10,7 +10,8 @@ const menuItems = [
   { href: '/reportes', label: 'Reportes', icon: '📄' },
   { href: '/solicitudes', label: 'Solicitudes', icon: '🛒' },
   { href: '/analitica', label: 'Analítica', icon: '🧠' },
-  { href: '/ayuda', label: 'Ayuda', icon: '❓' }
+  { href: '/ayuda', label: 'Ayuda', icon: '❓' },
+  { href: '/perfil', label: 'Mi perfil', icon: '👤' }
 ];
 
 type SidebarProps = {
@@ -33,6 +34,7 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
           <p className="text-xs font-semibold uppercase text-blue-600">
             Inventario DDJW
           </p>
+
           <h1 className="text-lg font-bold text-slate-900 dark:text-white">
             DDJW Caribe Azul
           </h1>
@@ -50,7 +52,8 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
 
       <nav className="space-y-2">
         {menuItems.map((item) => {
-          const active = pathname === item.href;
+          const active =
+            pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
