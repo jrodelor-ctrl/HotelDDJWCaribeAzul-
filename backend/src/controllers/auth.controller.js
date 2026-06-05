@@ -96,6 +96,7 @@ export const actualizarPerfil = asyncHandler(async (req, res) => {
   const cargo = limpiarTexto(req.body.cargo);
   const telefono = limpiarTexto(req.body.telefono);
   const area = limpiarTexto(req.body.area);
+  const fotoPerfil = limpiarTexto(req.body.fotoPerfil);
 
   if (!nombre || nombre.length < 3) {
     throw new ApiError('El nombre debe tener al menos 3 caracteres.', 400);
@@ -105,6 +106,21 @@ export const actualizarPerfil = asyncHandler(async (req, res) => {
   usuario.cargo = cargo;
   usuario.telefono = telefono;
   usuario.area = area;
+
+  if (fotoPerfil) {
+  const esImagenBase64 = fotoPerfil.startsWith('data:image/');
+  const esUrlImagen = fotoPerfil.startsWith('http://') || fotoPerfil.startsWith('https://');
+
+  if (!esImagenBase64 && !esUrlImagen) {
+    throw new ApiError('La foto de perfil debe ser una imagen válida.', 400);
+  }
+
+  if (fotoPerfil.length > 900000) {
+    throw new ApiError('La foto de perfil no puede superar el tamaño permitido.', 400);
+  }
+
+  usuario.fotoPerfil = fotoPerfil;
+}
 
   await usuario.save();
 

@@ -22,6 +22,7 @@ export type ActualizarPerfilPayload = {
   cargo: string;
   telefono: string;
   area: string;
+  fotoPerfil?: string;
 };
 
 export type CambiarPasswordPayload = {

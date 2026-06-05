@@ -25,7 +25,8 @@ export default function PerfilPage() {
     nombre: '',
     cargo: '',
     telefono: '',
-    area: ''
+    area: '',
+    fotoPerfil: ''
   });
 
   const [formPassword, setFormPassword] = useState<CambiarPasswordPayload>({
@@ -59,7 +60,9 @@ export default function PerfilPage() {
         nombre: usuario.nombre || '',
         cargo: usuario.cargo || '',
         telefono: usuario.telefono || '',
-        area: usuario.area || ''
+        area: usuario.area || '',
+        fotoPerfil: usuario.fotoPerfil || ''
+
       });
     } catch (err) {
       const message =
@@ -94,6 +97,54 @@ export default function PerfilPage() {
     }));
   };
 
+  const handleFotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const archivo = event.target.files?.[0];
+
+  if (!archivo) {
+    return;
+  }
+
+  const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+
+  if (!tiposPermitidos.includes(archivo.type)) {
+    setErrorPerfil('La foto debe ser una imagen JPG, PNG o WEBP.');
+    return;
+  }
+
+  const maxSize = 800 * 1024;
+
+  if (archivo.size > maxSize) {
+    setErrorPerfil('La foto no debe superar los 800 KB.');
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const resultado = reader.result;
+
+    if (typeof resultado === 'string') {
+      setFormPerfil((prev) => ({
+        ...prev,
+        fotoPerfil: resultado
+      }));
+
+      setPerfil((prev) =>
+        prev
+          ? {
+              ...prev,
+              fotoPerfil: resultado
+            }
+          : prev
+      );
+
+      setErrorPerfil('');
+    }
+  };
+
+  reader.readAsDataURL(archivo);
+};
+
   const handlePasswordChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -117,7 +168,8 @@ export default function PerfilPage() {
         nombre: formPerfil.nombre.trim(),
         cargo: formPerfil.cargo.trim(),
         telefono: formPerfil.telefono.trim(),
-        area: formPerfil.area.trim()
+        area: formPerfil.area.trim(),
+        fotoPerfil: formPerfil.fotoPerfil || ''
       });
 
       setPerfil(usuarioActualizado);
@@ -194,9 +246,29 @@ export default function PerfilPage() {
             <div className="space-y-6">
               <Card>
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-800 via-sky-700 to-cyan-600 text-white shadow-lg shadow-sky-200">
-                    <UserCircle className="h-11 w-11" />
-                  </div>
+                  <div className="flex flex-col items-center gap-3">
+        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-br from-blue-800 via-sky-700 to-cyan-600 text-white shadow-lg shadow-sky-200">
+         {perfil?.fotoPerfil ? (
+          <img
+           src={perfil.fotoPerfil}
+           alt="Foto de perfil"
+          className="h-full w-full object-cover"
+          />
+         ) : (
+        <UserCircle className="h-12 w-12" />
+          )}
+        </div>
+
+  <label className="cursor-pointer rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100">
+    Cambiar foto
+    <input
+      type="file"
+      accept="image/png,image/jpeg,image/webp"
+      onChange={handleFotoChange}
+      className="hidden"
+    />
+  </label>
+</div>
 
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-3">
