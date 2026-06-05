@@ -27,14 +27,14 @@ export const generalLimiter = rateLimit({
 });
 
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+    windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 10 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     ok: false,
     message:
-      'Demasiados intentos de inicio de sesión. Intenta nuevamente más tarde.'
+      'Demasiados intentos de inicio de sesión. Intenta nuevamente en 15 minutos.'
   }
 });
 
