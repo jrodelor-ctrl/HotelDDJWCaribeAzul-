@@ -12,19 +12,26 @@ import { Button } from '@/components/ui/button';
 export default function LoginPage() {
   const router = useRouter();
 
-  const [email, setEmail] = useState('admin@hotelddjw.com');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    const emailNormalizado = email.trim().toLowerCase();
+
+    if (!emailNormalizado || !password) {
+      setError('Ingresa tu correo electrónico y contraseña.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
 
-      await authService.login(email, password);
+      await authService.login(emailNormalizado, password);
       router.push('/dashboard');
     } catch (err) {
       setError(
@@ -160,7 +167,7 @@ export default function LoginPage() {
             </h3>
 
             <p className="mt-3 text-sm leading-6 text-slate-500">
-              Ingresa con las credenciales asignadas por el administrador.
+              Ingresa con las credenciales asignadas por el administrador del sistema.
             </p>
 
             {error ? (
@@ -183,7 +190,8 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@hotelddjw.com"
+                  placeholder="correo@dominio.com"
+                  autoComplete="username"
                   className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                   required
                 />
@@ -202,7 +210,8 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="******"
+                  placeholder="Ingresa tu contraseña"
+                  autoComplete="current-password"
                   className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                   required
                 />
@@ -211,7 +220,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-12 w-full rounded-2xl bg-gradient-to-r from-blue-800 via-sky-700 to-cyan-600 text-base font-semibold text-white shadow-lg shadow-sky-200 transition hover:opacity-95"
+                className="h-12 w-full rounded-2xl bg-gradient-to-r from-blue-800 via-sky-700 to-cyan-600 text-base font-semibold text-white shadow-lg shadow-sky-200 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? 'Ingresando...' : 'Ingresar al sistema'}
               </Button>
