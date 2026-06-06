@@ -56,6 +56,11 @@ const productoSchema = new mongoose.Schema(
     disponible: {
       type: Boolean,
       default: true
+    },
+
+    fechaDesactivacion: {
+      type: Date,
+      default: null
     }
   },
   {
@@ -67,6 +72,7 @@ const productoSchema = new mongoose.Schema(
 productoSchema.index({ nombre: 1, categoria: 1 });
 
 productoSchema.virtual('estadoStock').get(function () {
+  if (!this.disponible) return 'desactivado';
   if (this.stock === 0) return 'agotado';
   if (this.stock <= this.stockMinimo) return 'stock_bajo';
   return 'normal';

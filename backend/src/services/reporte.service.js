@@ -1,10 +1,53 @@
 import { Producto } from '../models/Producto.model.js';
 import { Movimiento } from '../models/Movimiento.model.js';
 
-export const obtenerReporteInventario = async ({ categoria, estadoStock }) => {
-  const filtros = {
-    disponible: true
+const obtenerEstadoProducto = (producto) => {
+  if (!producto.disponible) {
+    return 'Desactivado';
+  }
+
+  if (producto.stock === 0) {
+    return 'Agotado';
+  }
+
+  if (producto.stock <= producto.stockMinimo) {
+    return 'Stock bajo';
+  }
+
+  return 'Normal';
+};
+
+const obtenerEstadoStock = (producto) => {
+  if (!producto.disponible) {
+    return 'desactivado';
+  }
+
+  if (producto.stock === 0) {
+    return 'agotado';
+  }
+
+  if (producto.stock <= producto.stockMinimo) {
+    return 'stock_bajo';
+  }
+
+  return 'normal';
+};
+
+const normalizarProductoReporte = (producto) => {
+  const productoObjeto = producto.toObject
+    ? producto.toObject()
+    : producto;
+
+  return {
+    ...productoObjeto,
+    estado: obtenerEstadoProducto(producto),
+    estadoStock: obtenerEstadoStock(producto),
+    valorTotal: producto.precio * producto.stock
   };
+};
+
+export const obtenerReporteInventario = async ({ categoria, estadoStock }) => {
+  const filtros = {};
 
   if (categoria) {
     filtros.categoria = categoria;
@@ -17,36 +60,69 @@ export const obtenerReporteInventario = async ({ categoria, estadoStock }) => {
   const productosFiltrados = productos.filter((producto) => {
     if (!estadoStock) return true;
 
+    if (estadoStock === 'desactivado') {
+      return producto.disponible === false;
+    }
+
+    if (estadoStock === 'activo') {
+      return producto.disponible === true;
+    }
+
     if (estadoStock === 'agotado') {
-      return producto.stock === 0;
+      return producto.disponible && producto.stock === 0;
     }
 
     if (estadoStock === 'stock_bajo') {
-      return producto.stock > 0 && producto.stock <= producto.stockMinimo;
+      return (
+        producto.disponible &&
+        producto.stock > 0 &&
+        producto.stock <= producto.stockMinimo
+      );
     }
 
     if (estadoStock === 'normal') {
-      return producto.stock > producto.stockMinimo;
+      return producto.disponible && producto.stock > producto.stockMinimo;
     }
 
     return true;
   });
 
+  const productosReporte = productosFiltrados.map(normalizarProductoReporte);
+
+  const productosActivos = productosReporte.filter(
+    (producto) => producto.disponible
+  );
+
+  const productosDesactivados = productosReporte.filter(
+    (producto) => !producto.disponible
+  );
+
   const resumen = {
-    totalProductos: productosFiltrados.length,
-    totalAgotados: productosFiltrados.filter((producto) => producto.stock === 0)
+    totalProductos: productosReporte.length,
+
+    totalActivos: productosActivos.length,
+
+    totalDesactivados: productosDesactivados.length,
+
+    totalAgotados: productosActivos.filter((producto) => producto.stock === 0)
       .length,
-    totalStockBajo: productosFiltrados.filter((producto) => {
+
+    totalStockBajo: productosActivos.filter((producto) => {
       return producto.stock > 0 && producto.stock <= producto.stockMinimo;
     }).length,
-    valorTotalInventario: productosFiltrados.reduce((total, producto) => {
+
+    valorTotalInventario: productosActivos.reduce((total, producto) => {
+      return total + producto.precio * producto.stock;
+    }, 0),
+
+    valorTotalDesactivados: productosDesactivados.reduce((total, producto) => {
       return total + producto.precio * producto.stock;
     }, 0)
   };
 
   return {
     resumen,
-    productos: productosFiltrados
+    productos: productosReporte
   };
 };
 
@@ -76,17 +152,22 @@ export const obtenerReporteMovimientos = async ({
   }
 
   const movimientos = await Movimiento.find(filtros)
-    .populate('producto', 'nombre unidadMedida proveedor')
+    .populate(
+      'producto',
+      'nombre unidadMedida proveedor disponible fechaDesactivacion'
+    )
     .populate('area', 'nombre')
     .populate('usuario', 'nombre rol')
     .sort({ createdAt: -1 });
 
   const resumen = {
     totalMovimientos: movimientos.length,
-    totalEntradas: movimientos.filter((movimiento) => movimiento.tipo === 'entrada')
-      .length,
-    totalSalidas: movimientos.filter((movimiento) => movimiento.tipo === 'salida')
-      .length
+    totalEntradas: movimientos.filter(
+      (movimiento) => movimiento.tipo === 'entrada'
+    ).length,
+    totalSalidas: movimientos.filter(
+      (movimiento) => movimiento.tipo === 'salida'
+    ).length
   };
 
   return {
@@ -109,13 +190,8 @@ export const convertirInventarioACsv = (productos) => {
   ];
 
   const filas = productos.map((producto) => {
-    let estado = 'Normal';
-
-    if (producto.stock === 0) {
-      estado = 'Agotado';
-    } else if (producto.stock <= producto.stockMinimo) {
-      estado = 'Stock bajo';
-    }
+    const estado = producto.estado || obtenerEstadoProducto(producto);
+    const valorTotal = producto.valorTotal ?? producto.precio * producto.stock;
 
     return [
       producto.nombre,
@@ -124,7 +200,7 @@ export const convertirInventarioACsv = (productos) => {
       producto.stockMinimo,
       estado,
       producto.precio,
-      producto.precio * producto.stock,
+      valorTotal,
       producto.unidadMedida,
       producto.proveedor
     ];
@@ -134,11 +210,11 @@ export const convertirInventarioACsv = (productos) => {
     .map((fila) => {
       return fila
         .map((campo) => {
-          return `"${String(campo).replace(/"/g, '""')}"`;
+          return `"${String(campo ?? '').replace(/"/g, '""')}"`;
         })
-        .join(',');
+        .join(';');
     })
     .join('\n');
 
-  return contenido;
+  return `\uFEFF${contenido}`;
 };

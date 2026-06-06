@@ -132,15 +132,35 @@ const buildProductoPayload = (body, partial = false) => {
 
   if (body.disponible !== undefined) {
     payload.disponible = Boolean(body.disponible);
+
+    if (payload.disponible) {
+      payload.fechaDesactivacion = null;
+    }
+
+    if (!payload.disponible) {
+      payload.fechaDesactivacion = new Date();
+    }
   }
 
   return payload;
 };
 
 export const listarProductos = asyncHandler(async (req, res) => {
-  const { categoria, disponible, busqueda, stockBajo } = req.query;
+  const {
+    categoria,
+    disponible,
+    busqueda,
+    stockBajo,
+    incluirDesactivados
+  } = req.query;
 
   const filtros = {};
+
+  // Por defecto, el módulo de productos y los selectores operativos
+  // solo deben mostrar productos activos.
+  if (incluirDesactivados !== 'true') {
+    filtros.disponible = true;
+  }
 
   if (categoria) {
     if (!isValidObjectId(categoria)) {
@@ -150,6 +170,7 @@ export const listarProductos = asyncHandler(async (req, res) => {
     filtros.categoria = categoria;
   }
 
+  // Si se envía disponible=true o disponible=false, este filtro tiene prioridad.
   if (disponible !== undefined) {
     filtros.disponible = disponible === 'true';
   }
@@ -171,6 +192,7 @@ export const listarProductos = asyncHandler(async (req, res) => {
   }
 
   if (stockBajo === 'true') {
+    filtros.disponible = true;
     filtros.$expr = {
       $lte: ['$stock', '$stockMinimo']
     };
@@ -268,7 +290,10 @@ export const eliminarProducto = asyncHandler(async (req, res) => {
 
   const producto = await Producto.findByIdAndUpdate(
     id,
-    { disponible: false },
+    {
+      disponible: false,
+      fechaDesactivacion: new Date()
+    },
     {
       new: true,
       runValidators: true

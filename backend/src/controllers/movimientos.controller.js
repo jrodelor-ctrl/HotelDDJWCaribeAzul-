@@ -5,6 +5,9 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { successResponse } from '../utils/responses.js';
 
+const PRODUCTO_POPULATE_FIELDS =
+  'nombre stock stockMinimo unidadMedida proveedor disponible fechaDesactivacion';
+
 export const listarMovimientos = asyncHandler(async (req, res) => {
   const { producto, tipo, area, fechaInicio, fechaFin } = req.query;
 
@@ -35,7 +38,7 @@ export const listarMovimientos = asyncHandler(async (req, res) => {
   }
 
   const movimientos = await Movimiento.find(filtros)
-    .populate('producto', 'nombre stock stockMinimo unidadMedida proveedor')
+    .populate('producto', PRODUCTO_POPULATE_FIELDS)
     .populate('area', 'nombre')
     .populate('usuario', 'nombre correo rol')
     .sort({ createdAt: -1 });
@@ -51,7 +54,7 @@ export const obtenerMovimientoPorId = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const movimiento = await Movimiento.findById(id)
-    .populate('producto', 'nombre stock stockMinimo unidadMedida proveedor')
+    .populate('producto', PRODUCTO_POPULATE_FIELDS)
     .populate('area', 'nombre')
     .populate('usuario', 'nombre correo rol');
 
@@ -91,7 +94,10 @@ export const registrarMovimiento = asyncHandler(async (req, res) => {
   }
 
   if (!producto.disponible) {
-    throw new ApiError('El producto no está disponible para movimientos.', 400);
+    throw new ApiError(
+      'No se pueden registrar movimientos sobre un producto desactivado.',
+      400
+    );
   }
 
   if (tipo === 'salida' && !area) {
@@ -139,7 +145,7 @@ export const registrarMovimiento = asyncHandler(async (req, res) => {
   });
 
   const movimientoPopulado = await Movimiento.findById(movimiento._id)
-    .populate('producto', 'nombre stock stockMinimo unidadMedida proveedor')
+    .populate('producto', PRODUCTO_POPULATE_FIELDS)
     .populate('area', 'nombre')
     .populate('usuario', 'nombre correo rol');
 
