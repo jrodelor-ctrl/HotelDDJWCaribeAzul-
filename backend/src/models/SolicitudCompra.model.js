@@ -36,6 +36,18 @@ const solicitudCompraSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Usuario',
       required: [true, 'El usuario solicitante es obligatorio']
+    },
+
+    nombreUsuario: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+
+    rolUsuario: {
+      type: String,
+      trim: true,
+      default: ''
     }
   },
   {
@@ -47,6 +59,8 @@ const solicitudCompraSchema = new mongoose.Schema(
 solicitudCompraSchema.index({ producto: 1 });
 solicitudCompraSchema.index({ estado: 1 });
 solicitudCompraSchema.index({ prioridad: 1 });
+solicitudCompraSchema.index({ usuario: 1, createdAt: -1 });
+solicitudCompraSchema.index({ estado: 1, prioridad: 1, createdAt: -1 });
 
 export const SolicitudCompra = mongoose.model(
   'SolicitudCompra',

@@ -7,6 +7,26 @@ import { successResponse } from '../utils/responses.js';
 const PRODUCTO_POPULATE_FIELDS =
   'nombre stock stockMinimo unidadMedida proveedor disponible fechaDesactivacion';
 
+const USUARIO_POPULATE_FIELDS = 'nombre correo email rol';
+
+const obtenerDatosUsuarioSesion = (req) => {
+  const usuarioSesion = req.usuario || req.user;
+
+  if (!usuarioSesion) {
+    throw new ApiError('No autorizado. Usuario no identificado.', 401);
+  }
+
+  return {
+    id: usuarioSesion._id || usuarioSesion.id,
+    nombre:
+      usuarioSesion.nombre ||
+      usuarioSesion.correo ||
+      usuarioSesion.email ||
+      'Usuario no registrado',
+    rol: usuarioSesion.rol || ''
+  };
+};
+
 const validarProductoDisponible = async (productoId) => {
   const producto = await Producto.findById(productoId);
 
@@ -25,7 +45,14 @@ const validarProductoDisponible = async (productoId) => {
 };
 
 export const listarSolicitudes = asyncHandler(async (req, res) => {
-  const { estado, prioridad, producto } = req.query;
+  const {
+    estado,
+    prioridad,
+    producto,
+    usuario,
+    fechaInicio,
+    fechaFin
+  } = req.query;
 
   const filtros = {};
 
@@ -41,9 +68,25 @@ export const listarSolicitudes = asyncHandler(async (req, res) => {
     filtros.producto = producto;
   }
 
+  if (usuario) {
+    filtros.usuario = usuario;
+  }
+
+  if (fechaInicio || fechaFin) {
+    filtros.createdAt = {};
+
+    if (fechaInicio) {
+      filtros.createdAt.$gte = new Date(`${fechaInicio}T00:00:00.000Z`);
+    }
+
+    if (fechaFin) {
+      filtros.createdAt.$lte = new Date(`${fechaFin}T23:59:59.999Z`);
+    }
+  }
+
   const solicitudes = await SolicitudCompra.find(filtros)
     .populate('producto', PRODUCTO_POPULATE_FIELDS)
-    .populate('usuario', 'nombre correo rol')
+    .populate('usuario', USUARIO_POPULATE_FIELDS)
     .sort({ createdAt: -1 });
 
   return successResponse({
@@ -58,7 +101,7 @@ export const obtenerSolicitudPorId = asyncHandler(async (req, res) => {
 
   const solicitud = await SolicitudCompra.findById(id)
     .populate('producto', PRODUCTO_POPULATE_FIELDS)
-    .populate('usuario', 'nombre correo rol');
+    .populate('usuario', USUARIO_POPULATE_FIELDS);
 
   if (!solicitud) {
     throw new ApiError('Solicitud de compra no encontrada.', 404);
@@ -74,8 +117,14 @@ export const obtenerSolicitudPorId = asyncHandler(async (req, res) => {
 export const crearSolicitud = asyncHandler(async (req, res) => {
   const { producto: productoId, cantidadSugerida, prioridad, motivo } = req.body;
 
+  const usuarioSesion = obtenerDatosUsuarioSesion(req);
+
   if (!productoId) {
     throw new ApiError('El producto es obligatorio.', 400);
+  }
+
+  if (cantidadSugerida && Number(cantidadSugerida) <= 0) {
+    throw new ApiError('La cantidad sugerida debe ser mayor a cero.', 400);
   }
 
   const producto = await validarProductoDisponible(productoId);
@@ -93,9 +142,14 @@ export const crearSolicitud = asyncHandler(async (req, res) => {
   }
 
   const cantidadCalculada =
-    cantidadSugerida || Math.max(producto.stockMinimo * 2 - producto.stock, 1);
+    Number(cantidadSugerida) ||
+    Math.max(producto.stockMinimo * 2 - producto.stock, 1);
 
   let prioridadCalculada = prioridad || 'media';
+
+  if (!['baja', 'media', 'alta'].includes(prioridadCalculada)) {
+    throw new ApiError('La prioridad debe ser baja, media o alta.', 400);
+  }
 
   if (producto.stock === 0) {
     prioridadCalculada = 'alta';
@@ -108,12 +162,14 @@ export const crearSolicitud = asyncHandler(async (req, res) => {
     cantidadSugerida: cantidadCalculada,
     prioridad: prioridadCalculada,
     motivo: motivo || 'Producto con stock bajo o necesidad de reposición',
-    usuario: req.usuario._id
+    usuario: usuarioSesion.id,
+    nombreUsuario: usuarioSesion.nombre,
+    rolUsuario: usuarioSesion.rol
   });
 
   const solicitudPopulada = await SolicitudCompra.findById(solicitud._id)
     .populate('producto', PRODUCTO_POPULATE_FIELDS)
-    .populate('usuario', 'nombre correo rol');
+    .populate('usuario', USUARIO_POPULATE_FIELDS);
 
   return successResponse({
     res,
@@ -125,6 +181,8 @@ export const crearSolicitud = asyncHandler(async (req, res) => {
 
 export const generarSolicitudAutomatica = asyncHandler(async (req, res) => {
   const { productoId } = req.params;
+
+  const usuarioSesion = obtenerDatosUsuarioSesion(req);
 
   const producto = await validarProductoDisponible(productoId);
 
@@ -156,12 +214,14 @@ export const generarSolicitudAutomatica = asyncHandler(async (req, res) => {
     cantidadSugerida,
     prioridad,
     motivo: `Solicitud automática: stock actual (${producto.stock}) menor o igual al stock mínimo (${producto.stockMinimo}).`,
-    usuario: req.usuario._id
+    usuario: usuarioSesion.id,
+    nombreUsuario: usuarioSesion.nombre,
+    rolUsuario: usuarioSesion.rol
   });
 
   const solicitudPopulada = await SolicitudCompra.findById(solicitud._id)
     .populate('producto', PRODUCTO_POPULATE_FIELDS)
-    .populate('usuario', 'nombre correo rol');
+    .populate('usuario', USUARIO_POPULATE_FIELDS);
 
   return successResponse({
     res,
@@ -195,7 +255,7 @@ export const actualizarEstadoSolicitud = asyncHandler(async (req, res) => {
     }
   )
     .populate('producto', PRODUCTO_POPULATE_FIELDS)
-    .populate('usuario', 'nombre correo rol');
+    .populate('usuario', USUARIO_POPULATE_FIELDS);
 
   if (!solicitud) {
     throw new ApiError('Solicitud de compra no encontrada.', 404);

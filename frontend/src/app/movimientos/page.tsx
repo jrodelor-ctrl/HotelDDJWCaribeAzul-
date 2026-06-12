@@ -105,6 +105,43 @@ export default function MovimientosPage() {
     }
   };
 
+  const obtenerResponsableMovimiento = (movimiento: Movimiento) => {
+    if (movimiento.nombreUsuario) {
+      return movimiento.nombreUsuario;
+    }
+
+    if (
+      movimiento.usuario &&
+      typeof movimiento.usuario === 'object' &&
+      'nombre' in movimiento.usuario
+    ) {
+      return (
+        movimiento.usuario.nombre ||
+        movimiento.usuario.correo ||
+        movimiento.usuario.email ||
+        'Usuario no registrado'
+      );
+    }
+
+    return 'Usuario no registrado';
+  };
+
+  const obtenerRolMovimiento = (movimiento: Movimiento) => {
+    if (movimiento.rolUsuario) {
+      return movimiento.rolUsuario;
+    }
+
+    if (
+      movimiento.usuario &&
+      typeof movimiento.usuario === 'object' &&
+      'rol' in movimiento.usuario
+    ) {
+      return movimiento.usuario.rol || 'Sin rol';
+    }
+
+    return 'Sin rol';
+  };
+
   return (
     <AppLayout>
       <section className="space-y-6">
@@ -257,6 +294,24 @@ export default function MovimientosPage() {
                       <p>Stock anterior: {movimiento.stockAnterior}</p>
                       <p>Stock nuevo: {movimiento.stockNuevo}</p>
                     </div>
+
+                    <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
+                      <p>
+                        <span className="font-semibold">Realizado por:</span>{' '}
+                        {obtenerResponsableMovimiento(movimiento)}
+                      </p>
+                      <p className="mt-1">
+                        <span className="font-semibold">Rol:</span>{' '}
+                        {obtenerRolMovimiento(movimiento)}
+                      </p>
+                    </div>
+
+                    {movimiento.observacion ? (
+                      <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                        <span className="font-semibold">Observación:</span>{' '}
+                        {movimiento.observacion}
+                      </p>
+                    ) : null}
                   </article>
                 ))}
               </div>

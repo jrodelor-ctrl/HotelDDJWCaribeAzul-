@@ -34,6 +34,18 @@ const movimientoSchema = new mongoose.Schema(
       required: [true, 'El usuario responsable es obligatorio']
     },
 
+    nombreUsuario: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+
+    rolUsuario: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+
     observacion: {
       type: String,
       trim: true,
@@ -59,5 +71,7 @@ const movimientoSchema = new mongoose.Schema(
 movimientoSchema.index({ producto: 1, createdAt: -1 });
 movimientoSchema.index({ tipo: 1 });
 movimientoSchema.index({ area: 1 });
+movimientoSchema.index({ usuario: 1, createdAt: -1 });
+movimientoSchema.index({ tipo: 1, usuario: 1, createdAt: -1 });
 
 export const Movimiento = mongoose.model('Movimiento', movimientoSchema);

@@ -8,8 +8,10 @@ import { successResponse } from '../utils/responses.js';
 const PRODUCTO_POPULATE_FIELDS =
   'nombre stock stockMinimo unidadMedida proveedor disponible fechaDesactivacion';
 
+const USUARIO_POPULATE_FIELDS = 'nombre correo email rol';
+
 export const listarMovimientos = asyncHandler(async (req, res) => {
-  const { producto, tipo, area, fechaInicio, fechaFin } = req.query;
+  const { producto, tipo, area, usuario, fechaInicio, fechaFin } = req.query;
 
   const filtros = {};
 
@@ -25,22 +27,26 @@ export const listarMovimientos = asyncHandler(async (req, res) => {
     filtros.area = area;
   }
 
+  if (usuario) {
+    filtros.usuario = usuario;
+  }
+
   if (fechaInicio || fechaFin) {
     filtros.createdAt = {};
 
     if (fechaInicio) {
-      filtros.createdAt.$gte = new Date(fechaInicio);
+      filtros.createdAt.$gte = new Date(`${fechaInicio}T00:00:00.000Z`);
     }
 
     if (fechaFin) {
-      filtros.createdAt.$lte = new Date(fechaFin);
+      filtros.createdAt.$lte = new Date(`${fechaFin}T23:59:59.999Z`);
     }
   }
 
   const movimientos = await Movimiento.find(filtros)
     .populate('producto', PRODUCTO_POPULATE_FIELDS)
     .populate('area', 'nombre')
-    .populate('usuario', 'nombre correo rol')
+    .populate('usuario', USUARIO_POPULATE_FIELDS)
     .sort({ createdAt: -1 });
 
   return successResponse({
@@ -56,7 +62,7 @@ export const obtenerMovimientoPorId = asyncHandler(async (req, res) => {
   const movimiento = await Movimiento.findById(id)
     .populate('producto', PRODUCTO_POPULATE_FIELDS)
     .populate('area', 'nombre')
-    .populate('usuario', 'nombre correo rol');
+    .populate('usuario', USUARIO_POPULATE_FIELDS);
 
   if (!movimiento) {
     throw new ApiError('Movimiento no encontrado.', 404);
@@ -71,6 +77,12 @@ export const obtenerMovimientoPorId = asyncHandler(async (req, res) => {
 
 export const registrarMovimiento = asyncHandler(async (req, res) => {
   const { producto: productoId, tipo, cantidad, area, observacion } = req.body;
+
+  const usuarioSesion = req.usuario || req.user;
+
+  if (!usuarioSesion) {
+    throw new ApiError('No autorizado. Usuario no identificado.', 401);
+  }
 
   if (!productoId || !tipo || !cantidad) {
     throw new ApiError(
@@ -136,9 +148,19 @@ export const registrarMovimiento = asyncHandler(async (req, res) => {
   const movimiento = await Movimiento.create({
     producto: producto._id,
     tipo,
-    cantidad,
+    cantidad: Number(cantidad),
     area: tipo === 'salida' ? area : undefined,
-    usuario: req.usuario._id,
+
+    usuario: usuarioSesion._id || usuarioSesion.id,
+
+    nombreUsuario:
+      usuarioSesion.nombre ||
+      usuarioSesion.correo ||
+      usuarioSesion.email ||
+      'Usuario no registrado',
+
+    rolUsuario: usuarioSesion.rol || '',
+
     observacion,
     stockAnterior,
     stockNuevo
@@ -147,7 +169,7 @@ export const registrarMovimiento = asyncHandler(async (req, res) => {
   const movimientoPopulado = await Movimiento.findById(movimiento._id)
     .populate('producto', PRODUCTO_POPULATE_FIELDS)
     .populate('area', 'nombre')
-    .populate('usuario', 'nombre correo rol');
+    .populate('usuario', USUARIO_POPULATE_FIELDS);
 
   return successResponse({
     res,

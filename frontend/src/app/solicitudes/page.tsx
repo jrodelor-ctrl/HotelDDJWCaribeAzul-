@@ -20,7 +20,9 @@ export default function SolicitudesPage() {
 
   const [producto, setProducto] = useState('');
   const [cantidadSugerida, setCantidadSugerida] = useState(1);
-  const [prioridad, setPrioridad] = useState<'baja' | 'media' | 'alta'>('media');
+  const [prioridad, setPrioridad] = useState<'baja' | 'media' | 'alta'>(
+    'media'
+  );
   const [motivo, setMotivo] = useState('');
 
   const [loading, setLoading] = useState(true);
@@ -150,6 +152,35 @@ export default function SolicitudesPage() {
     return <Badge variant="warning">Pendiente</Badge>;
   };
 
+  const obtenerResponsableSolicitud = (solicitud: SolicitudCompra) => {
+    if (solicitud.nombreUsuario) {
+      return solicitud.nombreUsuario;
+    }
+
+    if (solicitud.usuario && typeof solicitud.usuario === 'object') {
+      return (
+        solicitud.usuario.nombre ||
+        solicitud.usuario.correo ||
+        solicitud.usuario.email ||
+        'Usuario no registrado'
+      );
+    }
+
+    return 'Usuario no registrado';
+  };
+
+  const obtenerRolSolicitud = (solicitud: SolicitudCompra) => {
+    if (solicitud.rolUsuario) {
+      return solicitud.rolUsuario;
+    }
+
+    if (solicitud.usuario && typeof solicitud.usuario === 'object') {
+      return solicitud.usuario.rol || 'Sin rol';
+    }
+
+    return 'Sin rol';
+  };
+
   return (
     <AppLayout>
       <section className="space-y-6">
@@ -158,9 +189,7 @@ export default function SolicitudesPage() {
             Compras internas
           </p>
 
-          <h1 className="text-3xl font-bold">
-            Solicitudes de compra
-          </h1>
+          <h1 className="text-3xl font-bold">Solicitudes de compra</h1>
 
           <p className="mt-2 text-slate-500 dark:text-slate-400">
             Gestiona solicitudes internas para reposición de productos con bajo
@@ -182,9 +211,7 @@ export default function SolicitudesPage() {
 
         <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
           <Card>
-            <h2 className="mb-4 text-xl font-bold">
-              Nueva solicitud
-            </h2>
+            <h2 className="mb-4 text-xl font-bold">Nueva solicitud</h2>
 
             <form onSubmit={crearSolicitud} className="space-y-4">
               <div className="space-y-1">
@@ -227,7 +254,9 @@ export default function SolicitudesPage() {
                 <select
                   value={prioridad}
                   onChange={(event) =>
-                    setPrioridad(event.target.value as 'baja' | 'media' | 'alta')
+                    setPrioridad(
+                      event.target.value as 'baja' | 'media' | 'alta'
+                    )
                   }
                   className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 >
@@ -297,6 +326,18 @@ export default function SolicitudesPage() {
                       </div>
                     </div>
 
+                    <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
+                      <p>
+                        <span className="font-semibold">Solicitado por:</span>{' '}
+                        {obtenerResponsableSolicitud(solicitud)}
+                      </p>
+
+                      <p className="mt-1">
+                        <span className="font-semibold">Rol:</span>{' '}
+                        {obtenerRolSolicitud(solicitud)}
+                      </p>
+                    </div>
+
                     {solicitud.estado === 'pendiente' ? (
                       <div className="mt-4 flex flex-wrap gap-2">
                         <Button
@@ -345,8 +386,7 @@ export default function SolicitudesPage() {
       >
         {solicitudSeleccionada ? (
           <p>
-            Producto:{' '}
-            <strong>{solicitudSeleccionada.producto.nombre}</strong>
+            Producto: <strong>{solicitudSeleccionada.producto.nombre}</strong>
           </p>
         ) : null}
       </Modal>
