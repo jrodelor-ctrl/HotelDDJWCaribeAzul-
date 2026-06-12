@@ -1,7 +1,8 @@
+import jwt from 'jsonwebtoken';
+
 import { Usuario } from '../models/Usuario.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { generateToken } from '../utils/generateToken.js';
 import { successResponse } from '../utils/responses.js';
 
 const construirUsuarioResponse = (usuario) => {
@@ -25,6 +26,69 @@ const limpiarTexto = (valor) => {
   }
 
   return valor.trim();
+};
+
+/**
+ * Access Token:
+ * Token corto que se envía al frontend para acceder a rutas protegidas.
+ */
+const generarAccessToken = (usuario) => {
+  return jwt.sign(
+    {
+      id: usuario._id,
+      rol: usuario.rol
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || '15m'
+    }
+  );
+};
+
+/**
+ * Refresh Token:
+ * Token de mayor duración usado solo para renovar el access token.
+ * Se guarda en cookie httpOnly.
+ */
+const generarRefreshToken = (usuario) => {
+  if (!process.env.REFRESH_TOKEN_SECRET) {
+    throw new ApiError(
+      'REFRESH_TOKEN_SECRET no está configurado en las variables de entorno.',
+      500
+    );
+  }
+
+  return jwt.sign(
+    {
+      id: usuario._id,
+      rol: usuario.rol
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d'
+    }
+  );
+};
+
+/**
+ * Cookie segura para guardar el refresh token.
+ * httpOnly evita que JavaScript del navegador pueda leerla.
+ */
+const configurarCookieRefreshToken = (res, refreshToken) => {
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  });
+};
+
+const limpiarCookieRefreshToken = (res) => {
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  });
 };
 
 export const login = asyncHandler(async (req, res) => {
@@ -54,18 +118,70 @@ export const login = asyncHandler(async (req, res) => {
     throw new ApiError('Credenciales inválidas.', 401);
   }
 
-  const token = generateToken({
-    id: usuario._id,
-    rol: usuario.rol
-  });
+  const accessToken = generarAccessToken(usuario);
+  const refreshToken = generarRefreshToken(usuario);
+
+  configurarCookieRefreshToken(res, refreshToken);
 
   return successResponse({
     res,
     message: 'Inicio de sesión exitoso.',
     data: {
       usuario: construirUsuarioResponse(usuario),
-      token
+      token: accessToken
     }
+  });
+});
+
+export const renovarToken = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+
+  if (!refreshToken) {
+    throw new ApiError('Refresh token no proporcionado.', 401);
+  }
+
+  try {
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const usuario = await Usuario.findById(decoded.id);
+
+    if (!usuario) {
+      throw new ApiError('Usuario no encontrado.', 404);
+    }
+
+    if (!usuario.activo) {
+      throw new ApiError('El usuario se encuentra inactivo.', 403);
+    }
+
+    const accessToken = generarAccessToken(usuario);
+
+    return successResponse({
+      res,
+      message: 'Token renovado correctamente.',
+      data: {
+        usuario: construirUsuarioResponse(usuario),
+        token: accessToken
+      }
+    });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError('Refresh token inválido o expirado.', 401);
+  }
+});
+
+export const logout = asyncHandler(async (req, res) => {
+  limpiarCookieRefreshToken(res);
+
+  return successResponse({
+    res,
+    message: 'Sesión cerrada correctamente.',
+    data: null
   });
 });
 
@@ -108,19 +224,23 @@ export const actualizarPerfil = asyncHandler(async (req, res) => {
   usuario.area = area;
 
   if (fotoPerfil) {
-  const esImagenBase64 = fotoPerfil.startsWith('data:image/');
-  const esUrlImagen = fotoPerfil.startsWith('http://') || fotoPerfil.startsWith('https://');
+    const esImagenBase64 = fotoPerfil.startsWith('data:image/');
+    const esUrlImagen =
+      fotoPerfil.startsWith('http://') || fotoPerfil.startsWith('https://');
 
-  if (!esImagenBase64 && !esUrlImagen) {
-    throw new ApiError('La foto de perfil debe ser una imagen válida.', 400);
+    if (!esImagenBase64 && !esUrlImagen) {
+      throw new ApiError('La foto de perfil debe ser una imagen válida.', 400);
+    }
+
+    if (fotoPerfil.length > 900000) {
+      throw new ApiError(
+        'La foto de perfil no puede superar el tamaño permitido.',
+        400
+      );
+    }
+
+    usuario.fotoPerfil = fotoPerfil;
   }
-
-  if (fotoPerfil.length > 900000) {
-    throw new ApiError('La foto de perfil no puede superar el tamaño permitido.', 400);
-  }
-
-  usuario.fotoPerfil = fotoPerfil;
-}
 
   await usuario.save();
 
