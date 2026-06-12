@@ -8,10 +8,21 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
+import { Input } from '@/components/ui/input';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton, SkeletonStats } from '@/components/ui/skeleton';
 
 import { apiRequest } from '@/lib/api';
 import { formatCurrency, getStockStatus } from '@/lib/formatters';
 import type { Producto } from '@/types/producto';
+
+const normalizarTexto = (texto: string) => {
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+};
 
 export default function ProductosPage() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -21,6 +32,7 @@ export default function ProductosPage() {
     useState<Producto | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [procesando, setProcesando] = useState(false);
+  const [categoriaFiltro, setCategoriaFiltro] = useState('');
 
   const cargarProductos = async () => {
     try {
@@ -45,6 +57,20 @@ export default function ProductosPage() {
     cargarProductos();
   }, []);
 
+  const productosFiltrados = useMemo(() => {
+    const filtro = normalizarTexto(categoriaFiltro);
+
+    if (!filtro) {
+      return productos;
+    }
+
+    return productos.filter((producto) => {
+      const categoria = producto.categoria?.nombre || 'Sin categoría';
+
+      return normalizarTexto(categoria).includes(filtro);
+    });
+  }, [productos, categoriaFiltro]);
+
   const resumen = useMemo(() => {
     const total = productos.length;
 
@@ -66,7 +92,7 @@ export default function ProductosPage() {
       total,
       stockBajo,
       agotados,
-      valorInventario,
+      valorInventario
     };
   }, [productos]);
 
@@ -90,7 +116,7 @@ export default function ProductosPage() {
       setError('');
 
       await apiRequest(`/productos/${productoSeleccionado._id}`, {
-        method: 'DELETE',
+        method: 'DELETE'
       });
 
       setProductos((productosActuales) =>
@@ -128,6 +154,77 @@ export default function ProductosPage() {
     return <Badge variant="success">Normal</Badge>;
   };
 
+  const renderSkeletonTabla = () => {
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[1120px] border-collapse text-left text-sm">
+          <thead className="bg-slate-50 dark:bg-slate-900/60">
+            <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
+              <th className="px-5 py-4 font-semibold">Producto</th>
+              <th className="px-5 py-4 font-semibold">Categoría</th>
+              <th className="px-5 py-4 font-semibold">Stock</th>
+              <th className="px-5 py-4 font-semibold">Mínimo</th>
+              <th className="px-5 py-4 font-semibold">Precio</th>
+              <th className="px-5 py-4 font-semibold">Proveedor</th>
+              <th className="px-5 py-4 font-semibold">Estado</th>
+              <th className="w-[230px] px-5 py-4 font-semibold">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {Array.from({ length: 6 }).map((_, index) => (
+              <tr
+                key={index}
+                className="border-b border-slate-100 last:border-0 dark:border-slate-800"
+              >
+                <td className="px-5 py-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-44" />
+                    <Skeleton className="h-3 w-56" />
+                  </div>
+                </td>
+
+                <td className="px-5 py-4">
+                  <Skeleton className="h-4 w-28" />
+                </td>
+
+                <td className="px-5 py-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-12" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </td>
+
+                <td className="px-5 py-4">
+                  <Skeleton className="h-4 w-12" />
+                </td>
+
+                <td className="px-5 py-4">
+                  <Skeleton className="h-4 w-24" />
+                </td>
+
+                <td className="px-5 py-4">
+                  <Skeleton className="h-4 w-32" />
+                </td>
+
+                <td className="px-5 py-4">
+                  <Skeleton className="h-7 w-24 rounded-full" />
+                </td>
+
+                <td className="w-[230px] px-5 py-4">
+                  <div className="flex gap-2">
+                    <Skeleton className="h-11 w-20" />
+                    <Skeleton className="h-11 w-28" />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <AppLayout>
       <section className="space-y-6">
@@ -153,8 +250,9 @@ export default function ProductosPage() {
                 type="button"
                 variant="secondary"
                 onClick={cargarProductos}
+                disabled={loading || procesando}
               >
-                Actualizar
+                {loading ? 'Cargando...' : 'Actualizar'}
               </Button>
 
               <Link href="/productos/nuevo">
@@ -164,63 +262,67 @@ export default function ProductosPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card className="p-5">
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Productos activos
-            </p>
+        {loading ? (
+          <SkeletonStats items={4} />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="p-5">
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Productos activos
+              </p>
 
-            <p className="mt-3 text-3xl font-bold text-slate-900 dark:text-white">
-              {resumen.total}
-            </p>
+              <p className="mt-3 text-3xl font-bold text-slate-900 dark:text-white">
+                {resumen.total}
+              </p>
 
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Registrados como disponibles
-            </p>
-          </Card>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Registrados como disponibles
+              </p>
+            </Card>
 
-          <Card className="p-5">
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Stock bajo
-            </p>
+            <Card className="p-5">
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Stock bajo
+              </p>
 
-            <p className="mt-3 text-3xl font-bold text-amber-600">
-              {resumen.stockBajo}
-            </p>
+              <p className="mt-3 text-3xl font-bold text-amber-600">
+                {resumen.stockBajo}
+              </p>
 
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Requieren revisión preventiva
-            </p>
-          </Card>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Requieren revisión preventiva
+              </p>
+            </Card>
 
-          <Card className="p-5">
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Agotados
-            </p>
+            <Card className="p-5">
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Agotados
+              </p>
 
-            <p className="mt-3 text-3xl font-bold text-red-600">
-              {resumen.agotados}
-            </p>
+              <p className="mt-3 text-3xl font-bold text-red-600">
+                {resumen.agotados}
+              </p>
 
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Sin unidades disponibles
-            </p>
-          </Card>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Sin unidades disponibles
+              </p>
+            </Card>
 
-          <Card className="p-5">
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Valor estimado
-            </p>
+            <Card className="p-5">
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Valor estimado
+              </p>
 
-            <p className="mt-3 text-2xl font-bold text-slate-900 dark:text-white">
-              {formatCurrency(resumen.valorInventario)}
-            </p>
+              <p className="mt-3 text-2xl font-bold text-slate-900 dark:text-white">
+                {formatCurrency(resumen.valorInventario)}
+              </p>
 
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Stock actual por precio
-            </p>
-          </Card>
-        </div>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Stock actual por precio
+              </p>
+            </Card>
+          </div>
+        )}
 
         {error ? (
           <Card className="p-4">
@@ -233,7 +335,7 @@ export default function ProductosPage() {
         ) : null}
 
         <Card className="overflow-hidden">
-          <div className="flex flex-col justify-between gap-3 border-b border-slate-200 p-5 dark:border-slate-800 md:flex-row md:items-center">
+          <div className="flex flex-col justify-between gap-4 border-b border-slate-200 p-5 dark:border-slate-800 xl:flex-row xl:items-end">
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                 Listado de productos
@@ -244,31 +346,55 @@ export default function ProductosPage() {
               </p>
             </div>
 
-            <Badge variant="success">{resumen.total} activos</Badge>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="w-full sm:w-72">
+                <Input
+                  id="categoriaFiltro"
+                  label="Filtrar por categoría"
+                  type="text"
+                  value={categoriaFiltro}
+                  onChange={(event) => setCategoriaFiltro(event.target.value)}
+                  placeholder="Ej: cocina, limpieza, lavandería..."
+                />
+              </div>
+
+              <div className="pb-1">
+                <Badge variant="success">
+                  {productosFiltrados.length} de {resumen.total} activos
+                </Badge>
+              </div>
+            </div>
           </div>
 
           {loading ? (
-            <div className="m-5 flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-              <p className="text-sm text-slate-500">Cargando productos...</p>
-            </div>
+            renderSkeletonTabla()
           ) : productos.length === 0 ? (
-            <div className="m-5 flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center dark:border-slate-800 dark:bg-slate-900/40">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-2xl dark:bg-blue-950/50">
-                📦
-              </div>
-
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                No hay productos activos
-              </h3>
-
-              <p className="mt-2 max-w-md text-sm text-slate-500 dark:text-slate-400">
-                Cuando registres productos disponibles para las áreas del hotel,
-                aparecerán en esta tabla.
-              </p>
-
-              <Link href="/productos/nuevo" className="mt-5">
-                <Button type="button">Registrar primer producto</Button>
-              </Link>
+            <div className="m-5">
+              <EmptyState
+                title="No hay productos activos"
+                description="Cuando registres productos disponibles para las áreas del hotel, aparecerán en esta tabla."
+                action={
+                  <Link href="/productos/nuevo">
+                    <Button type="button">Registrar primer producto</Button>
+                  </Link>
+                }
+              />
+            </div>
+          ) : productosFiltrados.length === 0 ? (
+            <div className="m-5">
+              <EmptyState
+                title="No hay productos en esta categoría"
+                description={`No se encontraron productos activos que coincidan con la categoría "${categoriaFiltro}". Cambia el filtro o registra un nuevo producto.`}
+                action={
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setCategoriaFiltro('')}
+                  >
+                    Limpiar filtro
+                  </Button>
+                }
+              />
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -289,7 +415,7 @@ export default function ProductosPage() {
                 </thead>
 
                 <tbody>
-                  {productos.map((producto) => (
+                  {productosFiltrados.map((producto) => (
                     <tr
                       key={producto._id}
                       className="border-b border-slate-100 transition last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/60"
@@ -337,10 +463,7 @@ export default function ProductosPage() {
                       <td className="w-[230px] px-5 py-4">
                         <div className="flex flex-nowrap items-center gap-2">
                           <Link href={`/productos/editar/${producto._id}`}>
-                            <Button
-                              type="button"
-                              className="h-11 px-5"
-                            >
+                            <Button type="button" className="h-11 px-5">
                               Editar
                             </Button>
                           </Link>
