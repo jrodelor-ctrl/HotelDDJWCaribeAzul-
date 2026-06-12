@@ -151,10 +151,22 @@ export const listarProductos = asyncHandler(async (req, res) => {
     disponible,
     busqueda,
     stockBajo,
-    incluirDesactivados
+    incluirDesactivados,
+    page = 1,
+    limit = 10
   } = req.query;
 
   const filtros = {};
+
+  /**
+   * Paginación:
+   * page indica la página actual.
+   * limit indica cuántos registros se devuelven por página.
+   * skip omite los registros de páginas anteriores.
+   */
+  const paginaActual = Math.max(Number(page) || 1, 1);
+  const limitePorPagina = Math.min(Math.max(Number(limit) || 10, 1), 50);
+  const skip = (paginaActual - 1) * limitePorPagina;
 
   // Por defecto, el módulo de productos y los selectores operativos
   // solo deben mostrar productos activos.
@@ -198,14 +210,32 @@ export const listarProductos = asyncHandler(async (req, res) => {
     };
   }
 
-  const productos = await Producto.find(filtros)
-    .populate('categoria', 'nombre descripcion')
-    .sort({ createdAt: -1 });
+  const [productos, totalProductos] = await Promise.all([
+    Producto.find(filtros)
+      .populate('categoria', 'nombre descripcion')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitePorPagina),
+
+    Producto.countDocuments(filtros)
+  ]);
+
+  const totalPaginas = Math.ceil(totalProductos / limitePorPagina);
 
   return successResponse({
     res,
     message: 'Productos obtenidos correctamente.',
-    data: { productos }
+    data: {
+      productos,
+      pagination: {
+        totalProductos,
+        totalPaginas,
+        paginaActual,
+        limitePorPagina,
+        tienePaginaAnterior: paginaActual > 1,
+        tienePaginaSiguiente: paginaActual < totalPaginas
+      }
+    }
   });
 });
 
