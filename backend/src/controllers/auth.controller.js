@@ -123,6 +123,8 @@ export const login = asyncHandler(async (req, res) => {
 
   configurarCookieRefreshToken(res, refreshToken);
 
+  req.usuarioAuditoria = usuario;
+
   return successResponse({
     res,
     message: 'Inicio de sesión exitoso.',
