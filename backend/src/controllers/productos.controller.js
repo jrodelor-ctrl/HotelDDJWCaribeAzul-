@@ -158,18 +158,11 @@ export const listarProductos = asyncHandler(async (req, res) => {
 
   const filtros = {};
 
-  /**
-   * Paginación:
-   * page indica la página actual.
-   * limit indica cuántos registros se devuelven por página.
-   * skip omite los registros de páginas anteriores.
-   */
   const paginaActual = Math.max(Number(page) || 1, 1);
   const limitePorPagina = Math.min(Math.max(Number(limit) || 10, 1), 50);
   const skip = (paginaActual - 1) * limitePorPagina;
 
-  // Por defecto, el módulo de productos y los selectores operativos
-  // solo deben mostrar productos activos.
+  
   if (incluirDesactivados !== 'true') {
     filtros.disponible = true;
   }
@@ -182,8 +175,7 @@ export const listarProductos = asyncHandler(async (req, res) => {
     filtros.categoria = categoria;
   }
 
-  // Si se envía disponible=true o disponible=false, este filtro tiene prioridad.
-  if (disponible !== undefined) {
+   if (disponible !== undefined) {
     filtros.disponible = disponible === 'true';
   }
 

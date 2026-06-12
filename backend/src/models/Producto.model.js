@@ -69,7 +69,21 @@ const productoSchema = new mongoose.Schema(
   }
 );
 
+
 productoSchema.index({ nombre: 1, categoria: 1 });
+
+
+productoSchema.index({
+  disponible: 1,
+  categoria: 1,
+  nombre: 1
+});
+
+
+productoSchema.index({
+  disponible: 1,
+  createdAt: -1
+});
 
 productoSchema.virtual('estadoStock').get(function () {
   if (!this.disponible) return 'desactivado';
@@ -80,17 +94,5 @@ productoSchema.virtual('estadoStock').get(function () {
 
 productoSchema.set('toJSON', { virtuals: true });
 productoSchema.set('toObject', { virtuals: true });
-productoSchema.index({ nombre: 1, categoria: 1 });
-
-productoSchema.index({
-  disponible: 1,
-  categoria: 1,
-  nombre: 1
-});
-
-productoSchema.index({
-  disponible: 1,
-  createdAt: -1
-});
 
 export const Producto = mongoose.model('Producto', productoSchema);
