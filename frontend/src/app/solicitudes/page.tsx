@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 
 import { apiRequest } from '@/lib/api';
+import { authService, type PerfilUsuario } from '@/lib/auth';
 import { formatDate } from '@/lib/formatters';
 import type { Producto } from '@/types/producto';
 import type { SolicitudCompra } from '@/types/solicitud';
@@ -17,6 +18,9 @@ import type { SolicitudCompra } from '@/types/solicitud';
 export default function SolicitudesPage() {
   const [solicitudes, setSolicitudes] = useState<SolicitudCompra[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [usuarioActual, setUsuarioActual] = useState<PerfilUsuario | null>(
+    null
+  );
 
   const [producto, setProducto] = useState('');
   const [cantidadSugerida, setCantidadSugerida] = useState(1);
@@ -35,6 +39,13 @@ export default function SolicitudesPage() {
     useState<SolicitudCompra | null>(null);
   const [nuevoEstado, setNuevoEstado] =
     useState<'aprobada' | 'rechazada' | null>(null);
+
+  const rolUsuarioActual = String(usuarioActual?.rol || '')
+    .toLowerCase()
+    .trim();
+
+  const puedeGestionarSolicitudes =
+    rolUsuarioActual === 'admin' || rolUsuarioActual === 'gerente';
 
   const cargarDatos = async () => {
     try {
@@ -56,6 +67,12 @@ export default function SolicitudesPage() {
   };
 
   useEffect(() => {
+    const usuarioGuardado = authService.getUser();
+
+    if (usuarioGuardado) {
+      setUsuarioActual(usuarioGuardado as PerfilUsuario);
+    }
+
     cargarDatos();
   }, []);
 
@@ -105,6 +122,11 @@ export default function SolicitudesPage() {
     solicitud: SolicitudCompra,
     estado: 'aprobada' | 'rechazada'
   ) => {
+    if (!puedeGestionarSolicitudes) {
+      setError('No tienes permisos para aprobar o rechazar solicitudes.');
+      return;
+    }
+
     setSolicitudSeleccionada(solicitud);
     setNuevoEstado(estado);
     setModalOpen(true);
@@ -113,8 +135,15 @@ export default function SolicitudesPage() {
   const actualizarEstado = async () => {
     if (!solicitudSeleccionada || !nuevoEstado) return;
 
+    if (!puedeGestionarSolicitudes) {
+      setError('No tienes permisos para aprobar o rechazar solicitudes.');
+      setModalOpen(false);
+      return;
+    }
+
     try {
       setGuardando(true);
+      setError('');
 
       await apiRequest(`/solicitudes/${solicitudSeleccionada._id}/estado`, {
         method: 'PATCH',
@@ -338,7 +367,8 @@ export default function SolicitudesPage() {
                       </p>
                     </div>
 
-                    {solicitud.estado === 'pendiente' ? (
+                    {solicitud.estado === 'pendiente' &&
+                    puedeGestionarSolicitudes ? (
                       <div className="mt-4 flex flex-wrap gap-2">
                         <Button
                           type="button"
@@ -360,6 +390,14 @@ export default function SolicitudesPage() {
                           Rechazar
                         </Button>
                       </div>
+                    ) : null}
+
+                    {solicitud.estado === 'pendiente' &&
+                    !puedeGestionarSolicitudes ? (
+                      <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                        Esta solicitud está pendiente de aprobación por un
+                        usuario con rol admin o gerente.
+                      </p>
                     ) : null}
                   </article>
                 ))}

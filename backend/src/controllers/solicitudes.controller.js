@@ -23,7 +23,7 @@ const obtenerDatosUsuarioSesion = (req) => {
       usuarioSesion.correo ||
       usuarioSesion.email ||
       'Usuario no registrado',
-    rol: usuarioSesion.rol || ''
+    rol: String(usuarioSesion.rol || '').toLowerCase().trim()
   };
 };
 
@@ -42,6 +42,21 @@ const validarProductoDisponible = async (productoId) => {
   }
 
   return producto;
+};
+
+const validarPermisoGestionSolicitud = (req) => {
+  const usuarioSesion = obtenerDatosUsuarioSesion(req);
+
+  const rolesPermitidos = ['admin', 'gerente'];
+
+  if (!rolesPermitidos.includes(usuarioSesion.rol)) {
+    throw new ApiError(
+      'No tienes permisos para aprobar, rechazar o gestionar esta solicitud.',
+      403
+    );
+  }
+
+  return usuarioSesion;
 };
 
 export const listarSolicitudes = asyncHandler(async (req, res) => {
@@ -232,6 +247,8 @@ export const generarSolicitudAutomatica = asyncHandler(async (req, res) => {
 });
 
 export const actualizarEstadoSolicitud = asyncHandler(async (req, res) => {
+  validarPermisoGestionSolicitud(req);
+
   const { id } = req.params;
   const { estado } = req.body;
 
@@ -246,6 +263,19 @@ export const actualizarEstadoSolicitud = asyncHandler(async (req, res) => {
     );
   }
 
+  const solicitudExistente = await SolicitudCompra.findById(id);
+
+  if (!solicitudExistente) {
+    throw new ApiError('Solicitud de compra no encontrada.', 404);
+  }
+
+  if (solicitudExistente.estado !== 'pendiente') {
+    throw new ApiError(
+      'Solo se pueden aprobar o rechazar solicitudes pendientes.',
+      400
+    );
+  }
+
   const solicitud = await SolicitudCompra.findByIdAndUpdate(
     id,
     { estado },
@@ -256,10 +286,6 @@ export const actualizarEstadoSolicitud = asyncHandler(async (req, res) => {
   )
     .populate('producto', PRODUCTO_POPULATE_FIELDS)
     .populate('usuario', USUARIO_POPULATE_FIELDS);
-
-  if (!solicitud) {
-    throw new ApiError('Solicitud de compra no encontrada.', 404);
-  }
 
   return successResponse({
     res,

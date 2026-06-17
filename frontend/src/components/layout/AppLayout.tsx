@@ -18,8 +18,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   useEffect(() => {
     const token = storage.getToken();
+    const usuario = storage.getUser();
 
-    if (!token) {
+    if (!token || !usuario) {
+      storage.clearSession();
       router.push('/login');
       return;
     }
@@ -36,7 +38,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             backgroundImage: "url('/logo-ddjw-caribe-azul.png')",
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            backgroundSize: '520px',
+            backgroundSize: '520px'
           }}
         />
 
@@ -51,15 +53,16 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-sky-50 via-white to-cyan-50 text-slate-900 dark:from-slate-950 dark:via-blue-950 dark:to-slate-950 dark:text-white">
       <div
         className="pointer-events-none fixed inset-0 opacity-[0.100] dark:opacity-[0.050]"
-  style={{
-    backgroundImage: "url('/logo-ddjw-caribe-azul.png')",
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    backgroundSize: '820px',
+        style={{
+          backgroundImage: "url('/logo-ddjw-caribe-azul.png')",
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: '820px'
         }}
       />
 
       <div className="pointer-events-none fixed -left-32 top-20 h-96 w-96 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-400/10" />
+
       <div className="pointer-events-none fixed -right-32 bottom-20 h-96 w-96 rounded-full bg-blue-400/20 blur-3xl dark:bg-blue-500/10" />
 
       <div className="relative z-10 lg:flex">

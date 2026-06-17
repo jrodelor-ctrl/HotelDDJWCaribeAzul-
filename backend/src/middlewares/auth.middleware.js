@@ -32,7 +32,19 @@ export const protegerRuta = asyncHandler(async (req, res, next) => {
 
 export const autorizarRoles = (...rolesPermitidos) => {
   return (req, res, next) => {
-    if (!rolesPermitidos.includes(req.usuario.rol)) {
+    if (!req.usuario) {
+      throw new ApiError('No autorizado. Usuario no identificado.', 401);
+    }
+
+    const rolUsuario = String(req.usuario.rol || '')
+      .toLowerCase()
+      .trim();
+
+    const rolesNormalizados = rolesPermitidos.map((rol) =>
+      String(rol).toLowerCase().trim()
+    );
+
+    if (!rolesNormalizados.includes(rolUsuario)) {
       throw new ApiError('No tienes permisos para realizar esta acción.', 403);
     }
 
